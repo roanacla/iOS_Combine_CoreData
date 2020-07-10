@@ -35,11 +35,15 @@ struct SavedJokesView: View {
       NavigationView {
         List {
           ForEach(jokes, id: \.self) { joke in
-            Text(joke)
+            // 1
+            Text(self.showTranslation ? joke.translatedValue ?? "N/A"
+                                      : joke.value ?? "N/A")
               .lineLimit(nil)
           }
           .onDelete { indices in
-            
+            // 2
+            self.jokes.delete(at: indices,
+                              inViewContext: self.viewContext)
           }
         }
         .navigationBarTitle("Saved Jokes")
@@ -65,8 +69,18 @@ struct SavedJokesView: View {
   }
   
   @State private var showTranslation = false
+  @Environment(\.managedObjectContext) private var viewContext
   
-  private var jokes = [String]()
+  //In a nutshell the following code does:
+//  Takes a sortDescriptors array to sort fetched objects and updates the List that will display them with the given animation type.
+//  Automatically performs fetches for you whenever the persistent store changes, which you can then use to trigger the view to re-render itself with the updated data.
+  @FetchRequest(
+    sortDescriptors: [NSSortDescriptor(
+                          keyPath: \JokeManagedObject.value,
+                          ascending: true
+                     )],
+    animation: .default
+  ) private var jokes: FetchedResults<JokeManagedObject>
 }
 
 struct SavedJokesView_Previews: PreviewProvider {

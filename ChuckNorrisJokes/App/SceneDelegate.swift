@@ -28,12 +28,15 @@
 
 import UIKit
 import SwiftUI
+import Combine
+import CoreData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
   
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
     let contentView = JokeView()
+      .environment(\.managedObjectContext, CoreDataStack.viewContext)
     
     if let windowScene = scene as? UIWindowScene {
       let window = UIWindow(windowScene: windowScene)
@@ -49,5 +52,33 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     // to restore the scene back to its current state.
     
     // Save changes in the application's managed object context when the application transitions to the background.
+    CoreDataStack.save()
+  }
+}
+
+// 1 Define a private enum called CoreDataStack. Using an enum is useful here, because CoreDataStack only serves as a namespace — you don’t actually want to be able to instantiate it.
+private enum CoreDataStack {
+  // 2
+  static var viewContext: NSManagedObjectContext = {
+    let container = NSPersistentContainer(name: "ChuckNorrisJokes")
+
+    container.loadPersistentStores { _, error in
+      guard error == nil else {
+        fatalError("\(#file), \(#function), \(error!.localizedDescription)")
+      }
+    }
+
+    return container.viewContext
+  }()
+
+  // 3
+  static func save() {
+    guard viewContext.hasChanges else { return }
+
+    do {
+      try viewContext.save()
+    } catch {
+      fatalError("\(#file), \(#function), \(error.localizedDescription)")
+    }
   }
 }

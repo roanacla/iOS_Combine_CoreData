@@ -37,11 +37,15 @@ struct JokeView: View {
           Spacer()
           
           LargeInlineButton(title: "Show Saved") {
-
+            self.presentSavedJokes = true
           }
           .padding(20)
         }
         .navigationBarTitle("Chuck Norris Jokes")
+      }
+      .sheet(isPresented: $presentSavedJokes) {
+        SavedJokesView()
+          .environment(\.managedObjectContext, self.viewContext)
       }
       
       HStack {
