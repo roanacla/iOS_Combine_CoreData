@@ -39,5 +39,17 @@ struct MockJokesService: JokeServiceDataPublisher {
     self.error = error
   }
   
+  func publisher() -> AnyPublisher<Data, URLError> {
+    // 1 You create a mock publisher that emits Data values and may fail with a URLError, initialized with the data property of the mocked service.
+    let publisher = CurrentValueSubject<Data, URLError>(data)
+    
+    // 2
+    if let error = error {
+      publisher.send(completion: .failure(error))
+    }
+    
+    // 3
+    return publisher.eraseToAnyPublisher()
+  }
   
 }

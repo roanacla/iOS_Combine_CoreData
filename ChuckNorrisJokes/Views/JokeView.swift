@@ -62,17 +62,19 @@ struct JokeView: View {
         .offset(y: showJokeView ? 0.0 : -bounds.height)
       
       HUDView(imageType: .thumbDown)
-        .opacity(0)
+        .opacity(viewModel.decisionState == .disliked ? hudOpacity : 0)
         .animation(.easeInOut)
       
       HUDView(imageType: .rofl)
-        .opacity(0)
+        .opacity(viewModel.decisionState == .liked ? hudOpacity : 0)
         .animation(.easeInOut)
     }
     .onAppear(perform: {
       self.reset()
     })
   }
+  @ObservedObject private var viewModel = JokesViewModel()
+  @Environment(\.managedObjectContext) private var viewContext
   
   @State private var showJokeView = false
   @State private var showFetchingJoke = false
@@ -85,8 +87,8 @@ struct JokeView: View {
   private var circleDiameter: CGFloat { bounds.width * 0.9 }
   
   private var jokeCardView: some View {
-    JokeCardView()
-      .background(Color.white)
+    JokeCardView(viewModel: viewModel)
+      .background(viewModel.backgroundColor)
       .cornerRadius(20)
       .shadow(radius: 10)
       .rotationEffect(rotationAngle)
@@ -110,15 +112,43 @@ struct JokeView: View {
   }
   
   private func updateDecisionStateForChange(_ change: DragGesture.Value) {
-
+    viewModel.updateDecisionStateForTranslation(
+      translation,
+      andPredictedEndLocationX: change.predictedEndLocation.x,
+      inBounds: bounds
+    )
   }
   
   private func updateBackgroundColor() {
-
+    viewModel.updateBackgroundColorForTranslation(translation)
   }
   
+  //This method detects when the user lifts the finger
   private func handle(_ change: DragGesture.Value) {
-    cardTranslation = .zero
+    // 1
+    let decisionState = viewModel.decisionState
+    
+    switch decisionState {
+    // 2
+    case .undecided:
+      cardTranslation = .zero
+      self.viewModel.reset()
+    default:
+      if decisionState == .liked {
+        JokeManagedObject.save(joke: viewModel.joke,
+                               inViewContext: viewContext)
+      }
+
+      // 3
+      let translation = change.translation
+      let offset = (decisionState == .liked ? 2 : -2) * bounds.width
+      cardTranslation = CGSize(width: translation.width + offset,
+                               height: translation.height)
+      showJokeView = false
+      
+      // 4 hides and then moves the joke card view back to its original position, tells the view model to fetch a new joke, and then shows the joke card view.
+      reset()
+    }
   }
   
   private func reset() {
@@ -126,6 +156,8 @@ struct JokeView: View {
       self.showFetchingJoke = true
       self.hudOpacity = 0.5
       self.cardTranslation = .zero
+      self.viewModel.reset()
+      self.viewModel.fetchJoke()
       
       DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
         self.showFetchingJoke = false

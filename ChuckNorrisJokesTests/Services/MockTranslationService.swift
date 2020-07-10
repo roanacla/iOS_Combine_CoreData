@@ -39,5 +39,19 @@ struct MockTranslationService: TranslationServiceDataPublisher {
     self.error = error
   }
   
+  func publisher(for joke: Joke, to languageCode: String) -> AnyPublisher<Data, URLError> {
+    // 1 You create a mock publisher that emits Data values and may fail with a URLError, initialized with the data property of the mocked service.
+    let publisher = CurrentValueSubject<Data, URLError>(data)
+    
+    // 2
+    if let error = error {
+      DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) {
+        publisher.send(completion: .failure(error))
+      }
+    }
+    
+    // 3
+    return publisher.eraseToAnyPublisher()
+  }
   
 }

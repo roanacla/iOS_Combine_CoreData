@@ -26,59 +26,65 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
+// 1
+import Foundation
 import SwiftUI
+import CoreData
 import ChuckNorrisJokesModel
 
-struct JokeCardView: View {
-  @ObservedObject var viewModel: JokesViewModel
+// 2
+extension JokeManagedObject {
+  // 3
+  static func save(joke: Joke, inViewContext viewContext: NSManagedObjectContext) {
+    // 4
+    guard joke.id != "error" else { return }
+    // 5
+    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(
+      entityName: String(describing: JokeManagedObject.self))
+    // 6
+    fetchRequest.predicate = NSPredicate(format: "id = %@", joke.id)
     
-  var body: some View {
-    ZStack {
-      VStack(alignment: .leading, spacing: 20) {
-        Text(viewModel.showTranslation ? viewModel.joke.translatedValue
-                                       : viewModel.joke.value)
-          .font(.largeTitle)
-          .foregroundColor(.primary)
-          .minimumScaleFactor(0.2)
-          .allowsTightening(true)
-          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-          .animation(.easeInOut)
-        
-        Button(action: {
-          let url = URL(string: "http://translate.yandex.com")!
-          UIApplication.shared.open(url)
-        }) {
-          Text("Translation Powered by Yandex.Translate")
-            .font(.caption)
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
-        }
-        .opacity(viewModel.showTranslation ? 1 : 0)
-        
-        LargeInlineButton(
-          title: "Toggle Language",
-          action: { self.viewModel.showTranslation.toggle() }
-        )
-        .animation(.easeInOut)
-      }
-      .frame(width: min(300, bounds.width * 0.7), height: min(400, bounds.height * 0.6))
-      .padding(20)
-      .cornerRadius(20)
+    // 7
+    if let results = try? viewContext.fetch(fetchRequest),
+       let existing = results.first as? JokeManagedObject {
+      existing.value = joke.value
+      existing.categories = joke.categories as NSArray
+      existing.languageCode = joke.languageCode
+      existing.translationLanguageCode = joke.translationLanguageCode
+      existing.translatedValue = joke.translatedValue
+    } else {
+      // 8
+      let newJoke = self.init(context: viewContext)
+      newJoke.id = joke.id
+      newJoke.value = joke.value
+      newJoke.categories = joke.categories as NSArray
+      newJoke.languageCode = joke.languageCode
+      newJoke.translationLanguageCode = joke.translationLanguageCode
+      newJoke.translatedValue = joke.translatedValue
     }
-  }
-  
-  private var bounds: CGRect { UIScreen.main.bounds }
-  
-  private var repeatingAnimation: Animation {
-    Animation.linear(duration: 1)
-      .repeatForever()
+    
+    // 9
+    do {
+      try viewContext.save()
+    } catch {
+      fatalError("\(#file), \(#function), \(error.localizedDescription)")
+    }
   }
 }
 
-#if DEBUG
-struct JokeCardView_Previews: PreviewProvider {
-  static var previews: some View {
-    JokeCardView(viewModel: JokesViewModel())
-      .previewLayout(.sizeThatFits)
+extension Collection where Element == JokeManagedObject, Index == Int {
+  // 1
+  func delete(at indices: IndexSet, inViewContext viewContext: NSManagedObjectContext) {
+    // 2
+    indices.forEach { index in
+      viewContext.delete(self[index])
+    }
+    
+    // 3
+    do {
+      try viewContext.save()
+    } catch {
+      fatalError("\(#file), \(#function), \(error.localizedDescription)")
+    }
   }
 }
-#endif

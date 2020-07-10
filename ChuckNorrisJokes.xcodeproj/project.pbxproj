@@ -37,6 +37,7 @@
 		D2E94671230B53020012CFFB /* JokeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E9466F230B53020012CFFB /* JokeView.swift */; };
 		D2E94672230B53020012CFFB /* JokeCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E94670230B53020012CFFB /* JokeCardView.swift */; };
 		D2FBF3F92313F83D00B0E4AE /* MockTranslationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2FBF3F82313F83D00B0E4AE /* MockTranslationService.swift */; };
+		DBBB4EC124B7FADD00E84453 /* JokeManagedObject+.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBBB4EC024B7FADD00E84453 /* JokeManagedObject+.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -101,10 +102,11 @@
 		D2568BBC230B071600FFB4E3 /* JokesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JokesService.swift; sourceTree = "<group>"; };
 		D28F40B623537953009EE25E /* ChuckNorrisJokes.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ChuckNorrisJokes.xcdatamodel; sourceTree = "<group>"; };
 		D2B46CAE230C7C6F003B2DFA /* SavedJokesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedJokesView.swift; sourceTree = "<group>"; };
-		D2E9466D230B1F280012CFFB /* JokesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JokesViewModel.swift; sourceTree = "<group>"; };
+		D2E9466D230B1F280012CFFB /* JokesViewModel.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = JokesViewModel.swift; sourceTree = "<group>"; tabWidth = 2; };
 		D2E9466F230B53020012CFFB /* JokeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = JokeView.swift; sourceTree = "<group>"; };
 		D2E94670230B53020012CFFB /* JokeCardView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = JokeCardView.swift; sourceTree = "<group>"; };
 		D2FBF3F82313F83D00B0E4AE /* MockTranslationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTranslationService.swift; sourceTree = "<group>"; };
+		DBBB4EC024B7FADD00E84453 /* JokeManagedObject+.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "JokeManagedObject+.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -271,6 +273,7 @@
 			isa = PBXGroup;
 			children = (
 				D28F40B523537953009EE25E /* ChuckNorrisJokes.xcdatamodeld */,
+				DBBB4EC024B7FADD00E84453 /* JokeManagedObject+.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -485,6 +488,7 @@
 				D2568BB6230AEB6A00FFB4E3 /* HUDView.swift in Sources */,
 				D2E94672230B53020012CFFB /* JokeCardView.swift in Sources */,
 				D2568B7D230AE10300FFB4E3 /* AppDelegate.swift in Sources */,
+				DBBB4EC124B7FADD00E84453 /* JokeManagedObject+.swift in Sources */,
 				D2568BB0230AEAA600FFB4E3 /* ChuckNorrisJokesStyleKit.swift in Sources */,
 				D2E94671230B53020012CFFB /* JokeView.swift in Sources */,
 				D2568B7F230AE10300FFB4E3 /* SceneDelegate.swift in Sources */,

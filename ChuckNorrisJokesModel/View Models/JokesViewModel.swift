@@ -30,44 +30,121 @@ import UIKit
 import Combine
 import SwiftUI
 
-public final class JokesViewModel {
+public final class JokesViewModel: ObservableObject {
   public enum DecisionState {
     case disliked, undecided, liked
   }
   
   private static let decoder = JSONDecoder()
   
+  @Published public var fetching: Bool = false
+  @Published public var joke: Joke = Joke.starter
+  @Published public var backgroundColor = Color("Gray")
+  @Published public var decisionState: DecisionState = .undecided
+  @Published public var showTranslation = false
+  
+  private let jokesService: JokeServiceDataPublisher
+  private let translationService: TranslationServiceDataPublisher
   
   
   private var subscriptions = Set<AnyCancellable>()
   private var jokeSubscriptions = Set<AnyCancellable>()
   
-  public init(jokesService: JokeServiceDataPublisher? = nil,
-              translationService: TranslationServiceDataPublisher? = nil) {
-    
+  public init(jokesService: JokeServiceDataPublisher = JokesService(),
+              translationService: TranslationServiceDataPublisher = TranslationService()) {
+    self.jokesService = jokesService
+    self.translationService = translationService
+    $joke
+      .map{ _ in false}
+      .assign(to: \.fetching, on: self)
+      .store(in: &subscriptions)
   }
   
   public func fetchJoke() {
+    // 1
+    fetching = true
+    // 2
+    jokeSubscriptions = []
     
+    // 3
+    jokesService.publisher()
+      // 4
+      .retry(1)
+      // 5
+      .decode(type: Joke.self, decoder: Self.decoder)
+       // 6
+      .replaceError(with: Joke.error)
+      // 7
+      .receive(on: DispatchQueue.main)
+      // 8
+      .handleEvents(receiveOutput: { [unowned self] in
+        self.joke = $0
+      })
+      // 9
+      .filter { $0 != Joke.error }
+       // 10
+      .flatMap { [unowned self] joke in
+        self.fetchTranslation(for: joke, to: "es")
+      }
+      // 11
+      .receive(on: DispatchQueue.main)
+       // 12
+      .assign(to: \.joke, on: self)
+      .store(in: &jokeSubscriptions)
   }
   
-  func fetchTranslation(for joke: Joke, to languageCode: String)
-    -> AnyPublisher<Joke, Never> {
-      return Empty().eraseToAnyPublisher()
+  func fetchTranslation(for joke: Joke, to languageCode: String) -> AnyPublisher<Joke, Never> {
+      // 1
+      guard joke.languageCode != languageCode else {
+        return Just(joke).eraseToAnyPublisher()
+      }
+      
+      // 2
+      return translationService.publisher(for: joke, to: languageCode)
+        .retry(1)
+        .decode(type: TranslationResponse.self, decoder: Self.decoder)
+        // 3
+        .compactMap { $0.translations.first }
+        // 4
+        .map {
+          Joke(id: joke.id,
+               value: joke.value,
+               categories: joke.categories,
+               languageCode: languageCode,
+               translationLanguageCode: languageCode,
+               translatedValue: $0)
+        }
+        // 5
+        .replaceError(with: Joke.error)
+        .eraseToAnyPublisher()
   }
   
   public func updateBackgroundColorForTranslation(_ translation: Double) {
-    
+    switch translation {
+    case ...(-0.5):
+      backgroundColor = Color("Red")
+    case 0.5...:
+      backgroundColor = Color("Green")
+    default:
+      backgroundColor = Color("Gray")
+    }
   }
   
   public func updateDecisionStateForTranslation(
   _ translation: Double,
   andPredictedEndLocationX x: CGFloat,
   inBounds bounds: CGRect) {
-    
+    switch (translation, x) {
+    case (...(-0.6), ..<0): // If the percent is -60%, you consider that a definitive decision by the user.
+      decisionState = .disliked
+    case (0.6..., bounds.width...): // If the percent is -60%, you consider that a definitive decision by the user.
+      decisionState = .liked
+    default:
+      decisionState = .undecided
+    }
   }
   
   public func reset() {
-    
+    backgroundColor = Color("Gray")
   }
 }
