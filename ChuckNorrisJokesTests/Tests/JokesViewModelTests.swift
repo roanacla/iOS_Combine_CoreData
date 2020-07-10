@@ -51,6 +51,28 @@ final class JokesViewModelTests: XCTestCase {
     subscriptions = []
   }
   
+  private func mockJokesService(withError: Bool = false) ->  MockJokesService {
+    MockJokesService(data: testJoke.data, error: withError ? error : nil)
+  }
+  
+  private func mockTranslationService(withError: Bool = false) -> MockTranslationService {
+    MockTranslationService(data: testTranslationResponseData, error: withError ? error : nil)
+  }
+  
+  private func viewModel(
+    withJokeError jokeError: Bool = false,
+    withTranslationError translationError: Bool = false)
+    -> JokesViewModel {
+    JokesViewModel(
+      jokesService: mockJokesService(
+        withError: jokeError
+      ),
+      translationService: mockTranslationService(
+        withError: translationError
+      )
+    )
+  }
+  
   private func testJoke(forResource resource: String) -> (data: Data, value: Joke) {
     let bundle = Bundle(for: type(of: self))
     
@@ -85,65 +107,159 @@ final class JokesViewModelTests: XCTestCase {
   }
   
   func test_backgroundColorFor50TranslationPercentIsGreen() {
-    // Given
-    
-    // When
-    
-    // Then
+     // Given
+     let viewModel = self.viewModel()
+     let translationPercent = 0.5
+     let expected = Color("Green")
+     var result: Color = .clear
+     
+     viewModel.$backgroundColor
+       .sink(receiveValue: {
+         result = $0
+       })
+       .store(in: &subscriptions)
+     
+     // When
+     viewModel.updateBackgroundColorForTranslation(translationPercent)
+     
+     // Then
+     XCTAssert(result == expected, "Color expected to be \(expected) but was \(result)")
     
   }
   
   func test_decisionStateFor60TranslationPercentIsLiked() {
     // Given
+    let viewModel = self.viewModel()
+    let translationPercent = 0.6
+    let bounds = CGRect(x: 0, y: 0, width: 414, height: 896)
+    let x = bounds.width
+    let expected: JokesViewModel.DecisionState = .liked
+    var result: JokesViewModel.DecisionState = .undecided
+    
+    viewModel.$decisionState
+      .sink(receiveValue: {
+        result = $0
+      })
+      .store(in: &subscriptions)
     
     // When
+    viewModel.updateDecisionStateForTranslation(translationPercent, andPredictedEndLocationX: x, inBounds: bounds)
     
     // Then
+    XCTAssert(result == expected, "Decision state expected to be \(expected) but was \(result)")
     
   }
   
   func test_decisionStateFor59TranslationPercentIsUndecided() {
-    // Given
+    
+    let viewModel = self.viewModel()
+    let translationPercent = 0.59
+    let bounds = CGRect(x: 0, y: 0, width: 414, height: 896)
+    let x = bounds.width
+    let expected: JokesViewModel.DecisionState = .undecided
+    var result: JokesViewModel.DecisionState = .disliked
     
     // When
+    viewModel.updateDecisionStateForTranslation(translationPercent, andPredictedEndLocationX: x, inBounds: bounds)
+    
+    viewModel.$decisionState
+      .sink(receiveValue: {
+        result = $0
+      })
+      .store(in: &subscriptions)
     
     // Then
-    
+    XCTAssert(result == expected, "Decision state expected to be \(expected) but was \(result)")
   }
   
   func test_fetchJokeSucceeds() {
     // Given
+    let viewModel = self.viewModel()
+    let expectation = self.expectation(description: #function)
+    let expected = self.testJoke.value
+    var result: Joke!
+    
+    viewModel.$joke
+      .dropFirst()
+      .sink(receiveValue: {
+        result = $0
+        expectation.fulfill()
+      })
+      .store(in: &subscriptions)
     
     // When
+    viewModel.fetchJoke()
     
     // Then
-    
+    waitForExpectations(timeout: 1, handler: nil)
+    XCTAssert(result == expected, "Joke expected to be \(expected) but was \(String(describing: result))")
   }
   
   func test_fetchJokeReceivesErrorJoke() {
     // Given
+    let viewModel = self.viewModel(withJokeError: true)
+    let expectation = self.expectation(description: #function)
+    let expected = Joke.error
+    var result: Joke!
+    
+    viewModel.$joke
+      .dropFirst()
+      .sink(receiveValue: {
+        result = $0
+        expectation.fulfill()
+      })
+      .store(in: &subscriptions)
     
     // When
+    viewModel.fetchJoke()
     
     // Then
+    waitForExpectations(timeout: 1, handler: nil)
+    XCTAssert(result == expected, "Joke expected to be \(expected) but was \(String(describing: result))")
     
   }
   
   func test_fetchTranslationForJokeSucceeds() {
     // Given
+    let viewModel = self.viewModel()
+    let translationLanguageCode = "es"
+    let expectation = self.expectation(description: #function)
+    let expected = testTranslatedJokeValue
+    var result: Joke!
     
     // When
+    viewModel.fetchTranslation(for: testJoke.value, to: translationLanguageCode)
+      .sink(receiveValue: {
+        result = $0
+        expectation.fulfill()
+      })
+      .store(in: &subscriptions)
     
     // Then
+    waitForExpectations(timeout: 1, handler: nil)
+    XCTAssert(result.translatedValue == expected, "Translated joke value expected to be \(expected) but was \(result.translatedValue)")
     
   }
   
   func test_fetchTranslationForJokeReceivesErrorJoke() {
     // Given
+    let viewModel = self.viewModel(withTranslationError: true)
+    let expectation = self.expectation(description: #function)
+    let expected = Joke.error
+    var result: Joke!
     
     // When
+    viewModel.fetchTranslation(for: testJoke.value, to: "es")
+      .dropFirst()
+      .sink(receiveValue: {
+        result = $0
+        expectation.fulfill()
+      })
+      .store(in: &subscriptions)
     
     // Then
+    waitForExpectations(timeout: 1, handler: nil)
+    XCTAssert(result == expected, "Joke expected to be \(expected) but was \(String(describing: result))")
     
   }
 }
